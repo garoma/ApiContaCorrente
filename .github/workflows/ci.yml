@@ -30,7 +30,7 @@ jobs:
       - name: 📂 Publish artifact
         if: success()
         run: |
-          dotnet publish src/YourWebApiProject/YourWebApiProject.csproj \
+          dotnet publish Questao5/Questao5.csproj \
             --no-build --configuration Release \
             --output ./publish
 

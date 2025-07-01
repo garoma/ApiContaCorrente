@@ -49,18 +49,18 @@ namespace Tests.Application.Handlers
         public async Task DeveRetornarErro_QuandoContaNaoExiste()
         {
             // Arrange
-            var request = new ConsultarSaldoRequest ("B6BAFC09-6967-ED11-A567-055DFA4A16C9");
+            var request = new ConsultarSaldoRequest("B6BAFC09-6967-ED11-A567-055DFA4A16C9");
 
             _mockQueryStore.Setup(q => q.ObterContaCorrenteAsync(request.ContaCorrenteId))
                            .ReturnsAsync((ContaCorrente)null);
 
             // Act
-            var result = await _handler.Handle(request, CancellationToken.None);
+            Func<Task> act = async () => await _handler.Handle(request, CancellationToken.None);
 
             // Assert
-            result.Sucesso.Should().BeFalse();
-            result.Saldo.Should().Be(0);
-            result.Mensagem.Should().Be("Conta não encontrada.");
+            await act.Should()
+                .ThrowAsync<ApplicationException>()
+                .WithMessage("Conta corrente não encontrada. | Tipo: INVALID_ACCOUNT");
         }
     }
 }

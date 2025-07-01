@@ -30,7 +30,7 @@ namespace Infrastructure.Database.CommandStore
             await _connection.ExecuteAsync(sql, new { Id = idRequisicao, MovimentoId = movimentoId });
         }
         
-        public async Task<string> InserirMovimentoAsync(string contaId, decimal valor, char tipo)
+        public async Task<string> InserirMovimentoAsync(string contaId, decimal valor, string tipo)
         {
             var id = Guid.NewGuid().ToString(); // idmovimento
             var data = DateTime.Now.ToString("dd/MM/yyyy"); // datamovimento

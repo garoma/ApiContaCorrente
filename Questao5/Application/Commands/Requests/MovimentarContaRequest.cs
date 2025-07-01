@@ -8,6 +8,6 @@ namespace Application.Commands.Requests
         public Guid IdRequisicao { get; set; }
         public string ContaCorrenteId { get; set; }
         public decimal Valor { get; set; }
-        public char Tipo { get; set; } // 'C' ou 'D'
+        public string Tipo { get; set; } // 'C' ou 'D'
     }
 }

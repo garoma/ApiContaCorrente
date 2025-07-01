@@ -1,11 +1,13 @@
 ﻿using Application.Commands.Requests;
 using Application.Handlers;
 using Domain.Entities;
+using Domain.Enumerators;
 using FluentAssertions;
 using Infrastructure.Database.CommandStore;
 using Infrastructure.Database.QueryStore;
 using Moq;
 using NSubstitute;
+using System.Security;
 
 namespace Tests.Application.Handlers
 {
@@ -30,7 +32,7 @@ namespace Tests.Application.Handlers
             {
                 ContaCorrenteId = "conta-123",
                 Valor = 100m,
-                Tipo = 'C',
+                Tipo = "C",
                 IdRequisicao = Guid.NewGuid()
             };
 
@@ -48,7 +50,7 @@ namespace Tests.Application.Handlers
             _mockCommandStore.Setup(c => c.VerificarIdempotenciaAsync(request.IdRequisicao))
                 .ReturnsAsync(string.Empty);
 
-            _mockCommandStore.Setup(c => c.InserirMovimentoAsync(It.IsAny<string>(), It.IsAny<decimal>(), It.IsAny<char>()))
+            _mockCommandStore.Setup(c => c.InserirMovimentoAsync(It.IsAny<string>(), It.IsAny<decimal>(), It.IsAny<string>()))
                              .ReturnsAsync("movimento-id-fake");
 
             _mockCommandStore.Setup(c => c.RegistrarIdempotenciaAsync(request.IdRequisicao, It.IsAny<string>()))
@@ -68,20 +70,26 @@ namespace Tests.Application.Handlers
             // Arrange
             var request = new MovimentarContaRequest
             {
-                IdRequisicao = Guid.NewGuid(),
-                ContaCorrenteId = "conta-invalida",
-                Valor = 100m,
-                Tipo = 'C'
+                ContaCorrenteId = "123",
+                Tipo = TipoMovimento.Credito.ToString(),
+                Valor = 100
             };
 
-            _mockQueryStore.Setup(q => q.ObterContaCorrenteAsync(It.IsAny<string>()))
-                           .ReturnsAsync((ContaCorrente?)null); // ESSENCIAL!
+            var mockQueryStore = new Mock<IContaCorrenteQueryStore>();
+            var mockCommandStore = new Mock<IMovimentoCommandStore>();
+
+            mockQueryStore.Setup(q => q.ObterContaCorrenteAsync(request.ContaCorrenteId))
+                          .ReturnsAsync((ContaCorrente)null);
+
+            var handler = new MovimentarContaHandler(mockCommandStore.Object, mockQueryStore.Object);
+
             // Act
-            Func<Task> act = async () => await _handler.Handle(request, CancellationToken.None);
+            Func<Task> act = async () => await handler.Handle(request, CancellationToken.None);
 
             // Assert
-            await act.Should().ThrowAsync<ApplicationException>()
-                .WithMessage("*Conta inválida*");
+            await act.Should()
+                .ThrowAsync<ApplicationException>()
+                .WithMessage("Conta corrente não encontrada. | Tipo: INVALID_ACCOUNT");
         }
 
         [Fact]
@@ -92,7 +100,7 @@ namespace Tests.Application.Handlers
             {
                 ContaCorrenteId = "conta-123",
                 Valor = 100m,
-                Tipo = 'C',
+                Tipo = "C",
                 IdRequisicao = Guid.NewGuid()
             };
 
@@ -111,8 +119,9 @@ namespace Tests.Application.Handlers
             Func<Task> act = async () => await _handler.Handle(request, CancellationToken.None);
 
             // Assert
-            await act.Should().ThrowAsync<ApplicationException>()
-                .WithMessage("*Conta inativa*");
+            await act.Should()
+                .ThrowAsync<ApplicationException>()
+                .WithMessage("Conta corrente está inativa. | Tipo: INACTIVE_ACCOUNT");
         }
 
         [Theory]
@@ -125,7 +134,7 @@ namespace Tests.Application.Handlers
             {
                 ContaCorrenteId = "conta-123",
                 Valor = valorInvalido,
-                Tipo = 'C',
+                Tipo = "C",
                 IdRequisicao = Guid.NewGuid()
             };
 
@@ -144,15 +153,16 @@ namespace Tests.Application.Handlers
             Func<Task> act = async () => await _handler.Handle(request, CancellationToken.None);
 
             // Assert
-            await act.Should().ThrowAsync<ApplicationException>()
-                .WithMessage("*Valor inválido*");
+            await act.Should()
+                .ThrowAsync<ApplicationException>()
+                .Where(e => e.Message.Contains("maior que zero"));
         }
 
         [Theory]
-        [InlineData('X')]
-        [InlineData('Z')]
-        [InlineData(' ')]
-        public async Task Handle_DeveLancarException_QuandoTipoMovimentoInvalido(char tipoInvalido)
+        [InlineData("X")]
+        [InlineData("Z")]
+        [InlineData(" ")]
+        public async Task Handle_DeveLancarException_QuandoTipoMovimentoInvalido(String tipoInvalido)
         {
             // Arrange
             var request = new MovimentarContaRequest
@@ -178,8 +188,9 @@ namespace Tests.Application.Handlers
             Func<Task> act = async () => await _handler.Handle(request, CancellationToken.None);
 
             // Assert
-            await act.Should().ThrowAsync<ApplicationException>()
-                .WithMessage("*Tipo inválido*");
+            await act.Should()
+                .ThrowAsync<ApplicationException>()
+                .WithMessage("Tipo de movimento inválido. Use 'C' ou 'D'. | Tipo: INVALID_TYPE");
         }
 
         [Fact]
@@ -190,7 +201,7 @@ namespace Tests.Application.Handlers
             {
                 ContaCorrenteId = "conta-123",
                 Valor = 100m,
-                Tipo = 'C',
+                Tipo = "C",
                 IdRequisicao = Guid.NewGuid()
             };
 

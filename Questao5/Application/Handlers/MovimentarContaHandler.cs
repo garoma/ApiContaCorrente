@@ -30,7 +30,7 @@ namespace Application.Handlers
             if (request.Valor <= 0)
                 throw new ApplicationException($"{Mensagens.ValorInvalido} | Tipo: INVALID_VALUE");
 
-            if (request.Tipo != 'C' && request.Tipo != 'D')
+            if (request.Tipo != "C" && request.Tipo != "D")
                 throw new ApplicationException($"{Mensagens.TipoMovimentoInvalido} | Tipo: INVALID_TYPE");
 
             // Verifica idempotência

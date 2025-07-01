@@ -37,7 +37,6 @@ builder.Services.AddScoped<IDbConnection>(sp =>
 
 var app = builder.Build();
 
-// Configure the HTTP request pipeline.
 if (app.Environment.IsDevelopment())
 {
     app.UseSwagger();
@@ -50,7 +49,6 @@ app.UseAuthorization();
 
 app.MapControllers();
 
-// sqlite
 #pragma warning disable CS8602 // Dereference of a possibly null reference.
 app.Services.GetService<IDatabaseBootstrap>().Setup();
 #pragma warning restore CS8602 // Dereference of a possibly null reference.
@@ -63,5 +61,3 @@ app.Run();
 
 // Informações úteis:
 // Tipos do Sqlite - https://www.sqlite.org/datatype3.html
-
-
